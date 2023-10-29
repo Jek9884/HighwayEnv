@@ -54,7 +54,7 @@ class MergeEnv(AbstractEnv):
             "collision_reward": self.vehicle.crashed,
             "right_lane_reward": self.vehicle.lane_index[2] / 1,
             "high_speed_reward": scaled_speed,
-            "lane_change_reward": action in [0, 2],
+            # "lane_change_reward": action in [0, 2],
             "merging_speed_reward": sum(  # Altruistic penalty
                 (vehicle.target_speed - vehicle.speed) / vehicle.target_speed
                 for vehicle in self.road.vehicles
@@ -64,9 +64,9 @@ class MergeEnv(AbstractEnv):
 
     def _is_terminated(self) -> bool:
         """The episode is over when a collision occurs or when the access ramp has been passed."""
-        print("crash" + str(self.vehicle.crashed))
-        print("over"  + str(self.vehicle.position[0] > 370))
-        return self.vehicle.crashed or bool(self.vehicle.position[0] > 370)
+        # print("crash" + str(self.vehicle.crashed))
+        # print("over"  + str(self.vehicle.position[0] > 370))
+        return self.vehicle.crashed or bool(self.vehicle.position[0] > 370) or not self.vehicle.on_road
 
     def _is_truncated(self) -> bool:
         return False

@@ -114,7 +114,7 @@ class HighwayEnv(AbstractEnv):
     def _is_terminated(self) -> bool:
         """The episode is over if the ego vehicle crashed."""
         return (self.vehicle.crashed or
-                self.config["offroad_terminal"] and not self.vehicle.on_road)
+                self.config["offroad_terminal"] or not self.vehicle.on_road)
 
     def _is_truncated(self) -> bool:
         """The episode is truncated if the time limit is reached."""
