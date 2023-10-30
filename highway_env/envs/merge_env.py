@@ -25,11 +25,11 @@ class MergeEnv(AbstractEnv):
         cfg = super().default_config()
         cfg.update({
             "collision_reward": -1,
-            "right_lane_reward": 0.1,
+            "right_lane_reward": 0.0,
             "high_speed_reward": 0.2,
             "reward_speed_range": [20, 30],
             "merging_speed_reward": -0.5,
-            "lane_change_reward": -0.05,
+            "lane_change_reward": -0.0,
         })
         return cfg
 
@@ -42,9 +42,14 @@ class MergeEnv(AbstractEnv):
         :param action: the action performed
         :return: the reward of the state-action transition
         """
-        reward = sum(self.config.get(name, 0) * reward for name, reward in self._rewards(action).items())
+        if not self.vehicle.on_road or self.vehicle.crashed:
+            return -1
+        rewards = self._rewards(action).items()
+        # print(f"reward: {rewards}")
+        reward = sum(self.config.get(name, 0) * reward for name, reward in rewards)
+        
         return utils.lmap(reward,
-                          [self.config["collision_reward"] + self.config["merging_speed_reward"],
+                          [self.config["collision_reward"] ,#+ self.config["merging_speed_reward"],
                            self.config["high_speed_reward"] + self.config["right_lane_reward"]],
                           [0, 1])
 
@@ -52,14 +57,14 @@ class MergeEnv(AbstractEnv):
         scaled_speed = utils.lmap(self.vehicle.speed, self.config["reward_speed_range"], [0, 1])
         return {
             "collision_reward": self.vehicle.crashed,
-            "right_lane_reward": self.vehicle.lane_index[2] / 1,
+            # "right_lane_reward": self.vehicle.lane_index[2] / 1,
             "high_speed_reward": scaled_speed,
             # "lane_change_reward": action in [0, 2],
-            "merging_speed_reward": sum(  # Altruistic penalty
-                (vehicle.target_speed - vehicle.speed) / vehicle.target_speed
-                for vehicle in self.road.vehicles
-                if vehicle.lane_index == ("b", "c", 2) and isinstance(vehicle, ControlledVehicle)
-            )
+            # "merging_speed_reward": sum(  # Altruistic penalty
+            #     (vehicle.target_speed - vehicle.speed) / vehicle.target_speed
+            #     for vehicle in self.road.vehicles
+            #     if vehicle.lane_index == ("b", "c", 2) and isinstance(vehicle, ControlledVehicle)
+            # )
         }
 
     def _is_terminated(self) -> bool:

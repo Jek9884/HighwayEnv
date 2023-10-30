@@ -28,7 +28,7 @@ class RoundaboutEnv(AbstractEnv):
             "collision_reward": -1,
             "high_speed_reward": 0.2,
             "right_lane_reward": 0,
-            "lane_change_reward": -0.05,
+            "lane_change_reward": -0.00,
             "screen_width": 600,
             "screen_height": 600,
             "centering_position": [0.5, 0.6],
@@ -38,6 +38,8 @@ class RoundaboutEnv(AbstractEnv):
         return config
 
     def _reward(self, action: int) -> float:
+        if not self.vehicle.on_road or self.vehicle.crashed:
+            return -1
         rewards = self._rewards(action)
         reward = sum(self.config.get(name, 0) * reward for name, reward in rewards.items())
         # print(f"reward: {reward}", end="")

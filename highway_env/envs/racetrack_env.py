@@ -48,7 +48,7 @@ class RacetrackEnv(AbstractEnv):
             "lane_centering_reward": 1,
             "action_reward": -0.3,
             "controlled_vehicles": 1,
-            "other_vehicles": 1,
+            "vehicles_count": 1,
             "screen_width": 600,
             "screen_height": 600,
             "centering_position": [0.5, 0.5],
@@ -56,6 +56,8 @@ class RacetrackEnv(AbstractEnv):
         return config
 
     def _reward(self, action: np.ndarray) -> float:
+        if not self.vehicle.on_road or self.vehicle.crashed:
+            return -1
         rewards = self._rewards(action)
         reward = sum(self.config.get(name, 0) * reward for name, reward in rewards.items())
         reward = utils.lmap(reward, [self.config["collision_reward"], 1], [0, 1])
@@ -209,7 +211,7 @@ class RacetrackEnv(AbstractEnv):
         self.road.vehicles.append(vehicle)
 
         # Other vehicles
-        for i in range(rng.integers(self.config["other_vehicles"])):
+        for i in range(rng.integers(self.config["vehicles_count"])):
             random_lane_index = self.road.network.random_lane_index(rng)
             vehicle = IDMVehicle.make_on_lane(self.road, random_lane_index,
                                               longitudinal=rng.uniform(

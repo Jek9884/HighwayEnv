@@ -63,6 +63,8 @@ class IntersectionEnv(AbstractEnv):
         return config
 
     def _reward(self, action: int) -> float:
+        if not self.vehicle.on_road or self.vehicle.crashed:
+            return -1
         """Aggregated reward, for cooperative agents."""
         return sum(self._agent_reward(action, vehicle) for vehicle in self.controlled_vehicles
                    ) / len(self.controlled_vehicles)
