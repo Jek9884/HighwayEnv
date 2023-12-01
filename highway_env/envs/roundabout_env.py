@@ -26,9 +26,10 @@ class RoundaboutEnv(AbstractEnv):
             },
             "incoming_vehicle_destination": None,
             "collision_reward": -1,
-            "high_speed_reward": 0.2,
+            "high_speed_reward": 5,
             "right_lane_reward": 0,
             "lane_change_reward": -0.00,
+            "reward_speed_range": [1, 30],
             "screen_width": 600,
             "screen_height": 600,
             "centering_position": [0.5, 0.6],
@@ -42,17 +43,23 @@ class RoundaboutEnv(AbstractEnv):
             return -1
         rewards = self._rewards(action)
         reward = sum(self.config.get(name, 0) * reward for name, reward in rewards.items())
-        # print(f"reward: {reward}", end="")
         if self.config["normalize_reward"]:
             reward = utils.lmap(reward, [self.config["collision_reward"], self.config["high_speed_reward"]], [0, 1])
         reward *= rewards["on_road_reward"]
         return reward
 
     def _rewards(self, action: int) -> Dict[Text, float]:
+        lane = self.vehicle.lane
+        longitudinal, _ = lane.local_coordinates(self.vehicle.position)
+        lane_heading = lane.heading_at(longitudinal)
+        lane_direction = np.array([np.cos(lane_heading), np.sin(lane_heading)])
+        forward_velocity = np.dot(self.vehicle.velocity, lane_direction)
+        # forward_speed = self.vehicle.speed #* np.cos(self.vehicle.heading)
+        scaled_speed = utils.lmap(forward_velocity, self.config["reward_speed_range"], [0, 1])
         return {
             "collision_reward": self.vehicle.crashed,
-            "high_speed_reward":
-                 MDPVehicle.get_speed_index(self.vehicle) / (MDPVehicle.DEFAULT_TARGET_SPEEDS.size - 1),
+            "high_speed_reward": np.clip(scaled_speed, 0, 1),
+                #  MDPVehicle.get_speed_index(self.vehicle) / (MDPVehicle.DEFAULT_TARGET_SPEEDS.size - 1),
             # "lane_change_reward": action in [0, 2],
             "on_road_reward": self.vehicle.on_road
         }
