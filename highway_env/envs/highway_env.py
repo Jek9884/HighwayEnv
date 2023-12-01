@@ -87,9 +87,10 @@ class HighwayEnv(AbstractEnv):
         :param action: the last action performed
         :return: the corresponding reward
         """
-        if not self.vehicle.on_road or self.vehicle.crashed:
-            return -1
+        # if not self.vehicle.on_road or self.vehicle.crashed:
+        #     return -1
         rewards = self._rewards(action)
+        # print(rewards, end="\t")
         reward = sum(self.config.get(name, 0) * reward for name, reward in rewards.items())
         if self.config["normalize_reward"]:
             reward = utils.lmap(reward,
@@ -97,6 +98,7 @@ class HighwayEnv(AbstractEnv):
                                  self.config["high_speed_reward"] + self.config["right_lane_reward"]],
                                 [0, 1])
         reward *= rewards['on_road_reward']
+        # print(reward)
         return reward
 
     def _rewards(self, action: Action) -> Dict[Text, float]:
