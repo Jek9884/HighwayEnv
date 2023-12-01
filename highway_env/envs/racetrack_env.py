@@ -52,6 +52,8 @@ class RacetrackEnv(AbstractEnv):
             "screen_width": 600,
             "screen_height": 600,
             "centering_position": [0.5, 0.5],
+            "offroad_terminal": True,
+            
         })
         return config
 
@@ -74,7 +76,8 @@ class RacetrackEnv(AbstractEnv):
         }
 
     def _is_terminated(self) -> bool:
-        return self.vehicle.crashed or not self.vehicle.on_road
+        return self.vehicle.crashed or \
+            (self.config["offroad_terminal"] and not self.vehicle.on_road)
 
     def _is_truncated(self) -> bool:
         return self.time >= self.config["duration"]

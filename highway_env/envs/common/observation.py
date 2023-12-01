@@ -233,6 +233,8 @@ class KinematicObservation(ObservationType):
             df = pd.concat([df, pd.DataFrame(data=rows, columns=self.features)], ignore_index=True)
         # Reorder
         df = df[self.features]
+        if self.include_obstacles:
+            df = df.fillna(0)
         obs = df.values.copy()
         if self.order == "shuffled":
             self.env.np_random.shuffle(obs[1:])
