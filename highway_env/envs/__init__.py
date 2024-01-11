@@ -9,3 +9,4 @@ from highway_env.envs.u_turn_env import *
 from highway_env.envs.exit_env import *
 from highway_env.envs.racetrack_env import *
 from highway_env.envs.indiana_env import *
+from highway_env.envs.lane_centering import *

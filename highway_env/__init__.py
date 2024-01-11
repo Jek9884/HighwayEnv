@@ -106,3 +106,8 @@ def register_highway_envs():
         entry_point='highway_env.envs:IndianaEnv'
     )
 
+    #lane_centering.py
+    register(
+        id='lane-centering-v0',
+        entry_point='highway_env.envs:LaneCenteringEnv'
+    )
