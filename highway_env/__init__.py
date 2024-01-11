@@ -100,4 +100,9 @@ def register_highway_envs():
         id='u-turn-v0',
         entry_point='highway_env.envs:UTurnEnv'
     )
+    # indiana_env.py
+    register(
+        id='indiana-v0',
+        entry_point='highway_env.envs:IndianaEnv'
+    )
 
