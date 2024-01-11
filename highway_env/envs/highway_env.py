@@ -41,10 +41,12 @@ class HighwayEnv(AbstractEnv):
             "collision_reward": -1,    # The reward received when colliding with a vehicle.
             "right_lane_reward": 0.1,  # The reward received when driving on the right-most lanes, linearly mapped to
                                        # zero for other lanes.
-            "high_speed_reward": 5,  # The reward received when driving at full speed, linearly mapped to zero for
+            "high_speed_reward": 10,  # The reward received when driving at full speed, linearly mapped to zero for
                                        # lower speeds according to config["reward_speed_range"].
             "lane_change_reward": 0,   # The reward received at each lane change action.
-            "reward_speed_range": [20, 30],
+            "lane_centering_cost": 0.5,
+            "lane_centering_reward": 1,
+            "reward_speed_range": [20, 50],
             "normalize_reward": True,
             "offroad_terminal": True
         })
@@ -87,32 +89,48 @@ class HighwayEnv(AbstractEnv):
         :param action: the last action performed
         :return: the corresponding reward
         """
-        # if not self.vehicle.on_road or self.vehicle.crashed:
-        #     return -1
+        if not self.vehicle.on_road or self.vehicle.crashed:
+            return -1
         rewards = self._rewards(action)
         # print(rewards, end="\t")
         reward = sum(self.config.get(name, 0) * reward for name, reward in rewards.items())
         if self.config["normalize_reward"]:
             reward = utils.lmap(reward,
                                 [self.config["collision_reward"],
-                                 self.config["high_speed_reward"] + self.config["right_lane_reward"]],
+                                 self.config["high_speed_reward"] #+ self.config["right_lane_reward"]
+                                 + self.config["lane_centering_reward"]
+                                 ],
                                 [0, 1])
-        reward *= rewards['on_road_reward']
+        # reward *= rewards['on_road_reward']
         # print(reward)
         return reward
 
     def _rewards(self, action: Action) -> Dict[Text, float]:
-        neighbours = self.road.network.all_side_lanes(self.vehicle.lane_index)
-        lane = self.vehicle.target_lane_index[2] if isinstance(self.vehicle, ControlledVehicle) \
-            else self.vehicle.lane_index[2]
-        # Use forward speed rather than speed, see https://github.com/eleurent/highway-env/issues/268
-        forward_speed = self.vehicle.speed * np.cos(self.vehicle.heading)
-        scaled_speed = utils.lmap(forward_speed, self.config["reward_speed_range"], [0, 1])
+        # neighbours = self.road.network.all_side_lanes(self.vehicle.lane_index)
+        # lane = self.vehicle.target_lane_index[2] if isinstance(self.vehicle, ControlledVehicle) \
+        #     else self.vehicle.lane_index[2]
+        # # Use forward speed rather than speed, see https://github.com/eleurent/highway-env/issues/268
+        # forward_speed = self.vehicle.speed * np.cos(self.vehicle.heading)
+        # scaled_speed = utils.lmap(forward_speed, self.config["reward_speed_range"], [0, 1])
+        
+        lane = self.vehicle.lane
+        longitudinal, lateral = lane.local_coordinates(self.vehicle.position)
+        lane_heading = lane.heading_at(longitudinal)
+        lane_direction = np.array([np.cos(lane_heading), np.sin(lane_heading)])
+        forward_velocity = np.dot(self.vehicle.velocity, lane_direction)
+        scaled_speed = utils.lmap(forward_velocity, self.config["reward_speed_range"], [0, 1])
+        
+        # longitudinal, lateral = self.vehicle.lane.local_coordinates(self.vehicle.position)
+        if self.config["lane_centering_reward"]:
+            lane_centering_rew = 1/(1+self.config["lane_centering_cost"]*lateral**2)
+        else:
+            lane_centering_rew = 0
         return {
             "collision_reward": float(self.vehicle.crashed),
-            "right_lane_reward": lane / max(len(neighbours) - 1, 1),
+            # "right_lane_reward": lane / max(len(neighbours) - 1, 1),
+            "lane_centering_rew": lane_centering_rew,
             "high_speed_reward": np.clip(scaled_speed, 0, 1),
-            "on_road_reward": float(self.vehicle.on_road)
+            # "on_road_reward": float(self.vehicle.on_road)
         }
 
     def _is_terminated(self) -> bool:

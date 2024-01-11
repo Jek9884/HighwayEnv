@@ -26,10 +26,12 @@ class MergeEnv(AbstractEnv):
         cfg.update({
             "collision_reward": -1,
             "right_lane_reward": 0.1,
-            "high_speed_reward": 5,
-            "reward_speed_range": [20, 30],
-            "merging_speed_reward": -0.5,
+            "high_speed_reward": 10,
+            "reward_speed_range": [20, 50],
+            # "merging_speed_reward": -0.5,
             "lane_change_reward": -0.0,
+            "lane_centering_cost": 0.5,
+            "lane_centering_reward": 1,
             "offroad_terminal": True,
             "duration": 10,
         })
@@ -52,21 +54,31 @@ class MergeEnv(AbstractEnv):
         
         return utils.lmap(reward,
                           [self.config["collision_reward"] ,#+ self.config["merging_speed_reward"],
-                           self.config["high_speed_reward"] + self.config["right_lane_reward"]],
+                           self.config["high_speed_reward"] + self.config["lane_centering_reward"]],
                           [0, 1])
 
     def _rewards(self, action: int) -> Dict[Text, float]:
-        scaled_speed = utils.lmap(self.vehicle.speed, self.config["reward_speed_range"], [0, 1])
+        forward_speed = self.vehicle.speed * np.cos(self.vehicle.heading)
+        scaled_speed = utils.lmap(forward_speed, self.config["reward_speed_range"], [0, 1])
+
+        # scaled_speed = utils.lmap(self.vehicle.speed, self.config["reward_speed_range"], [0, 1])
+        longitudinal, lateral = self.vehicle.lane.local_coordinates(self.vehicle.position)
+        if self.config["lane_centering_reward"]:
+            lane_centering_rew = 1/(1+self.config["lane_centering_cost"]*lateral**2)
+        else:
+            lane_centering_rew = 0
         return {
             "collision_reward": self.vehicle.crashed,
-            "right_lane_reward": self.vehicle.lane_index[2] / 1,
-            "high_speed_reward": scaled_speed,
+            # "right_lane_reward": self.vehicle.lane_index[2] / 1,
+            "high_speed_reward": np.clip(scaled_speed, 0, 1),
             # "lane_change_reward": action in [0, 2],
-            "merging_speed_reward": sum(  # Altruistic penalty
-                (vehicle.target_speed - vehicle.speed) / vehicle.target_speed
-                for vehicle in self.road.vehicles
-                if vehicle.lane_index == ("b", "c", 2) and isinstance(vehicle, ControlledVehicle)
-            )
+            "lane_centering_reward": lane_centering_rew,
+            # "merging_speed_reward": sum(  # Altruistic penalty
+            #     (vehicle.target_speed - vehicle.speed) / vehicle.target_speed
+            #     for vehicle in self.road.vehicles
+            #     if vehicle.lane_index == ("b", "c", 2) and isinstance(vehicle, ControlledVehicle)
+            # )
+            # "on_road_reward": float(self.vehicle.on_road),
         }
 
     def _is_terminated(self) -> bool:

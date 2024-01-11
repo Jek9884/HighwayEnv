@@ -44,16 +44,19 @@ class RacetrackEnv(AbstractEnv):
             "policy_frequency": 5,
             "duration": 300,
             "collision_reward": -1,
-            "lane_centering_cost": 4,
+            "high_speed_reward": 5,
+            "lane_centering_cost": 0.2,
             "lane_centering_reward": 1,
-            "action_reward": -0.3,
+            "reward_speed_range": [20, 50],
+            # "action_reward": -0.0,
             "controlled_vehicles": 1,
             "vehicles_count": 1,
             "screen_width": 600,
             "screen_height": 600,
             "centering_position": [0.5, 0.5],
             "offroad_terminal": True,
-            
+            "initial_speed": None,
+            "random_spawn":False,
         })
         return config
 
@@ -62,17 +65,29 @@ class RacetrackEnv(AbstractEnv):
             return -1
         rewards = self._rewards(action)
         reward = sum(self.config.get(name, 0) * reward for name, reward in rewards.items())
-        reward = utils.lmap(reward, [self.config["collision_reward"], 1], [0, 1])
-        reward *= rewards["on_road_reward"]
+        reward = utils.lmap(reward, [self.config["collision_reward"], self.config["high_speed_reward"]], [0, 1])
+        # reward *= rewards["on_road_reward"]
         return reward
 
     def _rewards(self, action: np.ndarray) -> Dict[Text, float]:
-        _, lateral = self.vehicle.lane.local_coordinates(self.vehicle.position)
+        lane = self.vehicle.lane
+        longitudinal, lateral = lane.local_coordinates(self.vehicle.position)
+        lane_heading = lane.heading_at(longitudinal)
+        lane_direction = np.array([np.cos(lane_heading), np.sin(lane_heading)])
+        forward_velocity = np.dot(self.vehicle.velocity, lane_direction)
+        # forward_speed = self.vehicle.speed #* np.cos(self.vehicle.heading)
+        scaled_speed = utils.lmap(forward_velocity, self.config["reward_speed_range"], [0, 1])
+        
+        if self.config["lane_centering_reward"]:
+            lane_centering_rew = 1/(1+self.config["lane_centering_cost"]*lateral**2)
+        else:
+            lane_centering_rew = 0
         return {
-            "lane_centering_reward": 1/(1+self.config["lane_centering_cost"]*lateral**2),
-            "action_reward": np.linalg.norm(action),
+            "high_speed_reward": np.clip(scaled_speed, 0, 1),
+            "lane_centering_reward": lane_centering_rew,
+            # "action_reward": np.linalg.norm(action),
             "collision_reward": self.vehicle.crashed,
-            "on_road_reward": self.vehicle.on_road,
+            # "on_road_reward": self.vehicle.on_road,
         }
 
     def _is_terminated(self) -> bool:
@@ -196,10 +211,13 @@ class RacetrackEnv(AbstractEnv):
         # Controlled vehicles
         self.controlled_vehicles = []
         for i in range(self.config["controlled_vehicles"]):
-            lane_index = ("a", "b", rng.integers(2)) if i == 0 else \
-                self.road.network.random_lane_index(rng)
-            controlled_vehicle = self.action_type.vehicle_class.make_on_lane(self.road, lane_index, speed=None,
-                                                                             longitudinal=rng.uniform(20, 50))
+            if self.config["random_spawn"]:
+                lane_index = self.road.network.random_lane_index(rng)
+            else:
+                lane_index = ("a", "b", rng.integers(2)) if i == 0 else \
+                    self.road.network.random_lane_index(rng)
+            controlled_vehicle = self.action_type.vehicle_class.make_on_lane(self.road, lane_index, speed=self.config["initial_speed"],
+                                                                             longitudinal=rng.uniform(20, 20))
 
             self.controlled_vehicles.append(controlled_vehicle)
             self.road.vehicles.append(controlled_vehicle)
