@@ -88,14 +88,21 @@ class LaneCenteringEnv(AbstractEnv):
         rng = self.np_random
         net = RoadNetwork()
         amplitude = rng.uniform(1,20, 1)
-        lane = SineLane([0, StraightLane.DEFAULT_WIDTH], 
+        pulsation_coef = 1 if rng.uniform(-1, 1, 1) > 0 else -1 
+        initial_lane = StraightLane(
+            [0, StraightLane.DEFAULT_WIDTH],
+            [10, StraightLane.DEFAULT_WIDTH],
+            line_types=(LineType.STRIPED, LineType.STRIPED)
+        )
+        net.add_lane("a", "b", initial_lane)
+        lane = SineLane([10, StraightLane.DEFAULT_WIDTH], 
                         [500, StraightLane.DEFAULT_WIDTH], 
                         amplitude=amplitude[0], 
-                        pulsation=2*np.pi / 100, 
+                        pulsation=pulsation_coef*2*np.pi / 100, 
                         phase=0,
-                        width=10,
+                        # width=10,
                         line_types=[LineType.STRIPED, LineType.STRIPED])
-        net.add_lane("a", "b", lane)
+        net.add_lane("b", "c", lane)
         # other_lane = StraightLane([50, StraightLane.DEFAULT_WIDTH], [115, StraightLane.DEFAULT_WIDTH],
         #                           line_types=(LineType.STRIPED, LineType.STRIPED))
         # net.add_lane("c", "d", other_lane)

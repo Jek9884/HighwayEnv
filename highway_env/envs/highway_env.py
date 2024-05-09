@@ -46,7 +46,7 @@ class HighwayEnv(AbstractEnv):
             "lane_change_reward": 0,   # The reward received at each lane change action.
             "lane_centering_cost": 0.5,
             "lane_centering_reward": 1,
-            "reward_speed_range": [20, 50],
+            "reward_speed_range": [20, 30],
             "normalize_reward": True,
             "offroad_terminal": True
         })

@@ -41,8 +41,8 @@ class RacetrackEnv(AbstractEnv):
                 "target_speeds": [0, 5, 10]
             },
             "simulation_frequency": 15,
-            "policy_frequency": 5,
-            "duration": 300,
+            "policy_frequency": 15,
+            "duration": 150,
             "collision_reward": -1,
             "high_speed_reward": 5,
             "lane_centering_cost": 0.2,
@@ -56,7 +56,7 @@ class RacetrackEnv(AbstractEnv):
             "centering_position": [0.5, 0.5],
             "offroad_terminal": True,
             "initial_speed": None,
-            "random_spawn":False,
+            "random_spawn":True,
         })
         return config
 
