@@ -179,6 +179,8 @@ class AbstractEnv(gym.Env):
             "direction": self.vehicle.direction,
             "heading": self.vehicle.heading,
             "position": self.vehicle.position,
+            "current_lane": self.vehicle_lane,
+            "road": self.road.network,
         }
         try:
             info["rewards"] = self._rewards(action)
