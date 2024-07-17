@@ -176,6 +176,9 @@ class AbstractEnv(gym.Env):
             "speed": self.vehicle.speed,
             "crashed": self.vehicle.crashed,
             "action": action,
+            "direction": self.vehicle.direction,
+            "heading": self.vehicle.heading,
+            "position": self.vehicle.position,
         }
         try:
             info["rewards"] = self._rewards(action)
