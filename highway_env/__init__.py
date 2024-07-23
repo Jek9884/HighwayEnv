@@ -111,3 +111,9 @@ def register_highway_envs():
         id='lane-centering-v0',
         entry_point='highway_env.envs:LaneCenteringEnv'
     )
+
+    #racetrack_complex_env.py
+    register(
+        id='racetrack-complex-v0',
+        entry_point='highway_env.envs:RacetrackComplexEnv'
+    )
