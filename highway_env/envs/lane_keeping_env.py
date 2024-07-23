@@ -15,8 +15,8 @@ class LaneKeepingEnv(AbstractEnv):
 
     """A lane keeping control task."""
 
-    def __init__(self, config: dict = None) -> None:
-        super().__init__(config)
+    def __init__(self, config: dict = None, render_mode=None) -> None:
+        super().__init__(config, render_mode)
         self.lane = None
         self.lanes = []
         self.trajectory = []
@@ -52,7 +52,7 @@ class LaneKeepingEnv(AbstractEnv):
     def step(self, action: np.ndarray) -> Tuple[np.ndarray, float, bool, bool, dict]:
         if self.lanes and not self.lane.on_lane(self.vehicle.position):
             self.lane = self.lanes.pop(0)
-        self.store_data()
+        #self.store_data()
         if self.lpv:
             self.lpv.set_control(control=action.squeeze(-1),
                                  state=self.vehicle.state[[1, 2, 4, 5]])
