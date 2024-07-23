@@ -66,7 +66,11 @@ class RacetrackEnv(AbstractEnv):
         rewards = self._rewards(action)
         reward = sum(self.config.get(name, 0) * reward for name, reward in rewards.items())
         reward = utils.lmap(reward, [self.config["collision_reward"], self.config["high_speed_reward"]], [0, 1])
-        # reward *= rewards["on_road_reward"]
+        
+        #if self.veichle.speed <= 0:
+        #    return -reward
+        #else:
+        #    return reward
         return reward
 
     def _rewards(self, action: np.ndarray) -> Dict[Text, float]:
