@@ -67,11 +67,11 @@ class RacetrackEnv(AbstractEnv):
         reward = sum(self.config.get(name, 0) * reward for name, reward in rewards.items())
         reward = utils.lmap(reward, [self.config["collision_reward"], self.config["high_speed_reward"]], [0, 1])
         
-        #if self.veichle.speed <= 0:
-        #    return -reward
-        #else:
-        #    return reward
-        return reward
+        if self.vehicle.speed <= 0:
+            return -reward
+        else:
+            return reward
+        #return reward
 
     def _rewards(self, action: np.ndarray) -> Dict[Text, float]:
         lane = self.vehicle.lane
@@ -163,7 +163,7 @@ class RacetrackEnv(AbstractEnv):
                                   clockwise=True, line_types=(LineType.NONE, LineType.CONTINUOUS),
                                   speed_limit=speedlimits[5]))
 
-        # 6 - Slant
+        # 6 - Oblique straight Lane
         net.add_lane("f", "g", StraightLane([55.7, -15.7], [35.7, -35.7],
                                             line_types=(LineType.CONTINUOUS, LineType.NONE), width=5,
                                             speed_limit=speedlimits[6]))
@@ -171,7 +171,7 @@ class RacetrackEnv(AbstractEnv):
                                             line_types=(LineType.STRIPED, LineType.CONTINUOUS), width=5,
                                             speed_limit=speedlimits[6]))
 
-        # 7 - Circular Arc #4 - Bugs out when arc is too large, hence written in 2 sections
+        # 7 - Circular Arc #4
         center4 = [18.1, -18.1]
         radii4 = 25
         net.add_lane("g", "h",
@@ -182,6 +182,8 @@ class RacetrackEnv(AbstractEnv):
                      CircularLane(center4, radii4+5, np.deg2rad(315), np.deg2rad(165), width=5,
                                   clockwise=False, line_types=(LineType.STRIPED, LineType.CONTINUOUS),
                                   speed_limit=speedlimits[7]))
+
+        # 8 - Circular Arc #5
         net.add_lane("h", "i",
                      CircularLane(center4, radii4, np.deg2rad(170), np.deg2rad(56), width=5,
                                   clockwise=False, line_types=(LineType.CONTINUOUS, LineType.NONE),
@@ -191,7 +193,7 @@ class RacetrackEnv(AbstractEnv):
                                   clockwise=False, line_types=(LineType.STRIPED, LineType.CONTINUOUS),
                                   speed_limit=speedlimits[7]))
 
-        # 8 - Circular Arc #5 - Reconnects to Start
+        # 8 - Circular Arc #6 - Reconnects to Start
         center5 = [43.2, 23.4]
         radii5 = 18.5
         net.add_lane("i", "a",
